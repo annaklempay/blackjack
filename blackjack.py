@@ -61,8 +61,7 @@ class DeckofCards:
         return self.cards.popleft()
 
     def discard(self, oldcards):
-        for card in oldcards:       # Optimize? Just do +=?
-            self.cards.append(card)
+        self.cards.extend(oldcards)
 
 # Functions
 
@@ -70,7 +69,7 @@ def getBet(maxBet):
     '''Ask the player how much they want to bet for this round, with the option to quit.'''
     while True:
         bet = input(f'How much do you want to bet? ($0.50 - ${maxBet:.2f}, or QUIT)\n> ').upper().strip()
-        if bet == 'QUIT': # Check for other alphabetic errors? (e.g. 'wuit'?)
+        if bet == 'QUIT':
             print('Thanks for playing!')
             sys.exit()
         # User error: bet is outside of range
@@ -128,7 +127,6 @@ def getMove(cards, money, name):
             return move
         if move == 'D' and '(D)ouble down' in moves:
             return move
-
 
 # Main Function
 
@@ -255,7 +253,6 @@ def main():
         roundcount += 1
         input('Press Enter to continue.')
         print('\n\n')
-        
 
 # Main Exection
 
