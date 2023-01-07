@@ -92,6 +92,7 @@ def displayCards(firstSet, secondSet, showDealer):
     print(f'\nYOUR HAND: {handValue(secondSet)}')
     for row in range(4):
         print(' '.join([card.display()[row] for card in secondSet]))
+    print()
 
 def handValue(cards):
     '''Given a set of cards, calculate the total value.'''
@@ -136,7 +137,7 @@ def main():
     # Print game rules
     print('''Welcome to my blackjack table!
 
-    GAME RULES:
+    --- GAME RULES ---
     Try to get as close to 21 without going over.
     Kings, Queens, and Jacks are worth 10 points.
     Aces are worth 1 or 11 points.
@@ -147,13 +148,16 @@ def main():
     but must hit exactly one more time before standing.
     In case of a tie, the bet is returned to the player.
     The dealer stops hitting at 17.
+    This game does not account for naturals, splitting, or any
+    kind of insurance.
     ''')
 
     # User introduction
     userName = input('What\'s your name, player?\n> ')
     userMoney = float(input('How much money are you playing with today (in dollars)?\n> '))
-    print(f'Best of luck, {userName}!')
+    print(f'Best of luck, {userName}!\n\n')
     deck = DeckofCards()
+    roundcount = 1
  
     while True:
         # Check if the player is out of money and offer chance to buy back in
@@ -173,6 +177,7 @@ def main():
             userMoney += moreMoney
         
         # Let player enter bet for the first round
+        print(f'--- ROUND {roundcount} ---')
         print(f'YOUR FUNDS: ${userMoney:.2f}')
         bet = getBet(userMoney)
 
@@ -182,65 +187,75 @@ def main():
 
         # Handle player actions
         print(f'Bet: ${bet:.2f}')
+        displayCards(dealerHand, userHand, False)
         while True: # Keep looping until player stands or busts
-            displayCards(dealerHand, userHand, False)
-            print()
-
+            
             # Check if the player has lost
             if handValue(userHand) > 21:
+                break
+
+            # Check if the player has already won
+            if handValue(userHand) == 21:
                 break
 
             # Get the player's move if they have not lost yet
             userMove = getMove(userHand, userMoney - bet, userName)
             if userMove == 'D': # Option to increase their bet to twice the original value
-                additionalBet = getBet(min(bet, (money-bet)))
+                additionalBet = getBet(min(bet, (userMoney-bet)))
                 bet += additionalBet
                 print(f'Bet increased to ${bet:.2f}')
                 print(f'Bet: ${bet:.2f}')
 
             if userMove in ('H', 'D'): # If user selected to double down OR hit, they receive another card
                 newCard = deck.deal()
-                print(f'You drew a {newCard.value} of {newCard.suit}!')
+                print(f'You drew a {PokerCard.VALUE.get(newCard.value, newCard.value)} of {newCard.suit}!')
                 userHand.append(newCard)
+                displayCards(dealerHand, userHand, False)
 
                 # Check if the player has lost
                 if handValue(userHand) > 21:
                     continue
-            # HANDLE S/D?
+            
+            if userMove in ('S', 'D'):
+                break
 
-            '''
-            # Dealer's actions
-            if handValue(dealerHand) <= 21:
-                while handValue(dealerHand) < 17:
-                    print('Dealer hits...')
-                    dealerHand.append(deck.pop())
-                    displayCards(dealerHand, userHand, False)
-                    if handValue(dealerHand) > 21:
-                        break
-                    input('Press Enter to continue.')
-                    print('\n\n')
+        # Give the user the opportunity to evaluate
+        input('Dealer is up next! Press Enter when ready.')
+    
+        # Dealer's actions
+        if handValue(dealerHand) <= 21:
+            while handValue(dealerHand) < 17:
+                print('Dealer hits...')
+                dealerHand.append(deck.deal())
+                displayCards(dealerHand, userHand, False)
+                input('Press Enter to continue.')
+                if handValue(dealerHand) > 21:
+                    break
 
-            # Show final hands
-            displayCards(dealerHand, userHand, True)
-            finalUserVal = handValue(userHand)
-            finalDealVal = handValue(dealerHand)
+        # Show final hands
+        displayCards(dealerHand, userHand, True)
+        finalUserVal = handValue(userHand)
+        finalDealVal = handValue(dealerHand)
 
-            # Handle final results
-            if finalDealVal > 21:
-                print(f'Dealer busts! You win ${bet:.2f}!')
-                money += bet
-            elif finalUserVal > 21 or finalUserVal < finalDealVal:
-                print('You lost!')
-                money -= bet
-            elif finalUserVal > finalDealVal:
-                print(f'You won ${bet:.2f}!')
-                money += bet
-            elif finalUserVal == finalDealVal:
-                print('It\'s a tie -- bet is returned to you.')
+        # Handle final results
+        if finalDealVal > 21:
+            print(f'Dealer busts! You win ${bet:.2f}!')
+            userMoney += bet
+        elif finalUserVal > 21 or finalUserVal < finalDealVal:
+            print('You lost!')
+            userMoney -= bet
+        elif finalUserVal > finalDealVal:
+            print(f'You won ${bet:.2f}, {userName}!')
+            userMoney += bet
+        elif finalUserVal == finalDealVal:
+            print('It\'s a tie -- bet is returned to you.')
 
-            input('Press Enter to continue.')
-            print('\n\n')
-            ''' 
+        # Discard the used cards and move onto next round
+        deck.discard(dealerHand + userHand)
+        roundcount += 1
+        input('Press Enter to continue.')
+        print('\n\n')
+        
 
 # Main Exection
 
